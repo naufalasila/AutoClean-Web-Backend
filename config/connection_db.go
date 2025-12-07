@@ -1,51 +1,51 @@
 package config
 
 import (
-	"database/sql"
-	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"time"
+    "database/sql"
+    "fmt"
+    "log"
+    "os"
+    "time"
 
-	"reset/helper"
-
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/joho/godotenv"
+    _ "github.com/go-sql-driver/mysql"
+    "github.com/joho/godotenv"
 )
 
-func ConnectToDatabase() (db *sql.DB, err error) {
-	var w http.ResponseWriter
-	err = godotenv.Load()
-	if err != nil {
-		helper.WriteJSONError(w, http.StatusInternalServerError, err.Error())
-		return nil, err
-	}
+func ConnectToDatabase() (*sql.DB, error) {
+    // Load .env (ignored in Railway, but needed locally)
+    err := godotenv.Load()
+    if err != nil {
+        log.Println("Warning: .env not found or failed to load:", err)
+    }
 
-	dbName := os.Getenv("DB_NAME")
-	dbUser := os.Getenv("DB_USER")
-	dbPass := os.Getenv("DB_PASS")
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
+    dbName := os.Getenv("DB_NAME")
+    dbUser := os.Getenv("DB_USER")
+    dbPass := os.Getenv("DB_PASS")
+    dbHost := os.Getenv("DB_HOST")
+    dbPort := os.Getenv("DB_PORT")
 
-	mysql := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local",
-    dbUser, dbPass, dbHost, dbPort, dbName)
-	db, err = sql.Open("mysql", mysql)
-	if err != nil {
-		helper.WriteJSONError(w, http.StatusInternalServerError, err.Error())
-		return db, err
-	}
+    mysqlConn := fmt.Sprintf(
+        "%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local",
+        dbUser, dbPass, dbHost, dbPort, dbName,
+    )
 
-	err = db.Ping()
-	if err != nil {
-		helper.WriteJSONError(w, http.StatusInternalServerError, err.Error())
-		log.Fatal("Err", err)
-		return db, err
-	}
+    db, err := sql.Open("mysql", mysqlConn)
+    if err != nil {
+        log.Println("Error opening DB connection:", err)
+        return nil, err
+    }
 
-	db.SetConnMaxLifetime(time.Minute * 3)
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(10)
+    // Test connection
+    err = db.Ping()
+    if err != nil {
+        log.Println("Error pinging DB:", err)
+        return nil, err
+    }
 
-	return db, nil
+    db.SetConnMaxLifetime(time.Minute * 3)
+    db.SetMaxOpenConns(10)
+    db.SetMaxIdleConns(10)
+
+    log.Println("Database connected successfully")
+    return db, nil
 }
