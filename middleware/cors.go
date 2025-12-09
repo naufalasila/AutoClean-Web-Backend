@@ -4,7 +4,7 @@ import (
     "net/http"
 )
 
-// CorsMiddleware versi sementara: nonaktifkan cek origin
+// CorsMiddleware versi sementara: izinkan semua origin
 func CorsMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -14,13 +14,13 @@ func CorsMiddleware(next http.Handler) http.Handler {
         w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, ngrok-skip-browser-warning")
         w.Header().Set("Access-Control-Allow-Credentials", "true")
 
-        // biarkan preflight OPTIONS langsung OK
+        // Preflight OPTIONS langsung OK
         if r.Method == http.MethodOptions {
             w.WriteHeader(http.StatusOK)
             return
         }
 
-        // lanjut ke handler berikutnya
+        // Lanjut ke handler berikutnya
         next.ServeHTTP(w, r)
     })
 }
