@@ -1,44 +1,26 @@
 package main
 
 import (
-    "fmt"
-    "log"
-    "net/http"
-    "os"
+	"fmt"
+	"os"
 
-    "github.com/joho/godotenv"
-    "reset/config"
-    "reset/routes"
-    "reset/middleware"
+	"github.com/joho/godotenv"
+	"reset/config"
+	"reset/routes"
 )
 
 func main() {
-    // Load env
-    errEnv := godotenv.Load()
-    if errEnv != nil {
-        log.Println("Warning: .env file not found, using environment variables")
-    }
+	errEnv := godotenv.Load()
+	if errEnv != nil {
+		panic(errEnv)
+	}
+	appPort := os.Getenv("APP_PORT")
+	fmt.Println(" http://localhost:" + appPort)
 
-    // Gunakan PORT dari Railway, fallback ke 8080
-    port := os.Getenv("PORT")
-    if port == "" {
-        port = os.Getenv("APP_PORT")
-        if port == "" {
-            port = "8080"
-        }
-    }
-    fmt.Println("Server running on port " + port)
+	db, err := config.ConnectToDatabase()
+	if err != nil {
+		panic(err)
+	}
 
-    // Connect ke database
-    db, err := config.ConnectToDatabase()
-    if err != nil {
-        log.Fatal("Database connection failed:", err)
-    }
-
-    // Setup router + middleware CORS
-    router := routes.SetupRoutes(db) // Pastikan routes.Routes/SetupRoutes mengembalikan *http.ServeMux atau router
-    handler := middleware.CorsMiddleware(router)
-
-    // Jalankan server
-    log.Fatal(http.ListenAndServe(":"+port, handler))
+	routes.Routes(db, appPort)
 }

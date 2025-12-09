@@ -4,13 +4,14 @@ import (
 	"database/sql"
 	"net/http"
 	"reset/controller"
+	"reset/middleware"
 	"reset/repository"
 	"reset/service"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-func SetupRoutes(db *sql.DB) *httprouter.Router {
+func Routes(db *sql.DB, port string) {
 	router := httprouter.New()
 
 	// User
@@ -36,5 +37,14 @@ func SetupRoutes(db *sql.DB) *httprouter.Router {
 	// Static file serving
 	router.ServeFiles("/uploads/*filepath", http.Dir("./uploads/"))
 
-	return router
+	handler := middleware.CorsMiddleware(router)
+
+	server := http.Server{
+		Addr:    ":" + port,
+		Handler: handler,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
+		panic(err)
+	}
 }
